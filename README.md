@@ -89,9 +89,10 @@ cd client
 ## CI / Release
 
 - `.github/workflows/ci.yml`：push / PR / 手动触发；运行单测、Lint、Debug 构建并上传 APK。
-- `.github/workflows/release.yml`：推送 `v*` tag 时运行；构建、校验签名并创建 GitHub Release。
+- `.github/workflows/release.yml`：推送 `v*` tag 时运行；构建**不含协议常量**的公开 Release APK，校验签名后创建 GitHub Release。
+- `.github/workflows/keyed-release.yml`：手动触发；注入协议常量，构建带常量的 APK，并创建 **draft** Release。draft 不公开，请勿把带常量的 APK 发布到公开 Release。
 
-Release 需要在仓库 Secrets 中配置：
+公开 Release 需要以下签名 Secrets：
 
 | Secret | 含义 |
 |---|---|
@@ -99,19 +100,24 @@ Release 需要在仓库 Secrets 中配置：
 | `ANDROID_KEYSTORE_PASSWORD` | keystore 口令 |
 | `ANDROID_KEY_ALIAS` | 签名 alias |
 | `ANDROID_KEY_PASSWORD` | key 口令 |
-| `TLKEY_PROTOCOL78_KEY` | 可选，78 帧 AES 常量 |
-| `TLKEY_PROTOCOL85_BB` | 可选，85 帧 BB 常量 |
-| `TLKEY_PROTOCOL85_JW` | 可选，85 帧 JW 常量 |
-| `TLKEY_PROTOCOL85_JD` | 可选，85 帧 JD 常量 |
-| `TLKEY_PROTOCOL85_AX` | 可选，85 帧 AX 常量 |
-| `TLKEY_PROTOCOL85_HJ` | 可选，85 帧 HJ 常量 |
-| `TLKEY_PROTOCOL85_XL` | 可选，85 帧 XL 常量 |
-| `TLKEY_PROTOCOL85_YY` | 可选，85 帧 YY 常量 |
-| `TLKEY_MQTT_LEGACY_USER` | 可选，KKS/YJ 共享 broker 用户名 |
-| `TLKEY_MQTT_LEGACY_PASSWORD` | 可选，KKS/YJ 共享 broker 密码 |
 
-没有签名 secrets 时 Release workflow 会明确失败，不会发布未签名 APK。未配置协议常量时仍会构建，
-但 78/85 帧车型不可控（workflow 会输出 warning）。
+`keyed-release.yml` 还需要以下常量 Secrets（仅手动触发，产物为 draft）：
+
+| Secret | 含义 |
+|---|---|
+| `TLKEY_PROTOCOL78_KEY` | 78 帧 AES 常量 |
+| `TLKEY_PROTOCOL85_BB` | 85 帧 BB 常量 |
+| `TLKEY_PROTOCOL85_JW` | 85 帧 JW 常量 |
+| `TLKEY_PROTOCOL85_JD` | 85 帧 JD 常量 |
+| `TLKEY_PROTOCOL85_AX` | 85 帧 AX 常量 |
+| `TLKEY_PROTOCOL85_HJ` | 85 帧 HJ 常量 |
+| `TLKEY_PROTOCOL85_XL` | 85 帧 XL 常量 |
+| `TLKEY_PROTOCOL85_YY` | 85 帧 YY 常量 |
+| `TLKEY_MQTT_LEGACY_USER` | KKS/YJ 共享 broker 用户名 |
+| `TLKEY_MQTT_LEGACY_PASSWORD` | KKS/YJ 共享 broker 密码 |
+
+没有签名 secrets 时 Release workflow 会明确失败，不会发布未签名 APK。公开 Release 始终不注入
+协议常量；78/85 帧与 KKS/YJ 云控需要本地自备常量构建，或使用手动触发的 keyed draft 构建。
 
 ## 目录
 
