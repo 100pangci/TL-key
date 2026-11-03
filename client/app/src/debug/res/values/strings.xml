@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- debug 变体 applicationIdSuffix=".debug"，桌面快捷方式必须指向实际包名。 -->
+    <string name="shortcut_target_package" translatable="false">com.ywpc.tlkey.debug</string>
+</resources>

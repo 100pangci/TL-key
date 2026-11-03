@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_unlock"
+        android:shortcutId="unlock"
+        android:shortcutLongLabel="@string/shortcut_unlock_long"
+        android:shortcutShortLabel="@string/shortcut_unlock_short">
+        <intent
+            android:action="com.ywpc.tlkey.action.UNLOCK"
+            android:targetClass="com.ywpc.tlkey.shortcut.VehicleShortcutActivity"
+            android:targetPackage="@string/shortcut_target_package" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_lock"
+        android:shortcutId="lock"
+        android:shortcutLongLabel="@string/shortcut_lock_long"
+        android:shortcutShortLabel="@string/shortcut_lock_short">
+        <intent
+            android:action="com.ywpc.tlkey.action.LOCK"
+            android:targetClass="com.ywpc.tlkey.shortcut.VehicleShortcutActivity"
+            android:targetPackage="@string/shortcut_target_package" />
+    </shortcut>
+</shortcuts>

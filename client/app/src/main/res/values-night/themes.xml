@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TLKey" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#7DDCB8</item>
+        <item name="colorOnPrimary">#00382A</item>
+        <item name="colorPrimaryContainer">#005141</item>
+        <item name="colorOnPrimaryContainer">#9BF9D9</item>
+        <item name="colorSecondary">#B1CCBF</item>
+        <item name="colorOnSecondary">#1D352C</item>
+        <item name="colorSecondaryContainer">#334B41</item>
+        <item name="colorOnSecondaryContainer">#CDE9DC</item>
+        <item name="colorSurface">#111815</item>
+        <item name="colorOnSurface">#E2EAE6</item>
+        <item name="colorSurfaceVariant">#3F4944</item>
+        <item name="colorOnSurfaceVariant">#BFC9C3</item>
+        <item name="colorOutline">#89938D</item>
+        <item name="colorError">#FFB4AB</item>
+        <item name="android:colorBackground">#0B100E</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

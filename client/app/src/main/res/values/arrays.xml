@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="ecu_hdc_options">
+        <item>关闭</item>
+        <item>弱</item>
+        <item>强</item>
+    </string-array>
+    <string-array name="ecu_hdc_values">
+        <item>00</item>
+        <item>01</item>
+        <item>10</item>
+    </string-array>
+
+    <string-array name="ecu_er_options">
+        <item>关闭</item>
+        <item>弱</item>
+        <item>强</item>
+    </string-array>
+    <string-array name="ecu_er_values">
+        <item>00</item>
+        <item>01</item>
+        <item>10</item>
+    </string-array>
+
+    <string-array name="ecu_podg_options">
+        <item>1 档</item>
+        <item>2 档</item>
+        <item>3 档</item>
+    </string-array>
+    <string-array name="ecu_podg_values">
+        <item>001</item>
+        <item>010</item>
+        <item>011</item>
+    </string-array>
+    <string-array name="ecu_podg_options_four">
+        <item>1 档</item>
+        <item>2 档</item>
+        <item>3 档</item>
+        <item>4 档</item>
+    </string-array>
+    <string-array name="ecu_podg_values_four">
+        <item>001</item>
+        <item>010</item>
+        <item>011</item>
+        <item>100</item>
+    </string-array>
+</resources>
