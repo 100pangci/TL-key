@@ -23,6 +23,16 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      TLKEY_MQTT_LEGACY_USER: ${{ secrets.TLKEY_MQTT_LEGACY_USER }}
+      TLKEY_MQTT_LEGACY_PASSWORD: ${{ secrets.TLKEY_MQTT_LEGACY_PASSWORD }}
+      TLKEY_PROTOCOL78_KEY: ${{ secrets.TLKEY_PROTOCOL78_KEY }}
+      TLKEY_PROTOCOL85_BB: ${{ secrets.TLKEY_PROTOCOL85_BB }}
+      TLKEY_PROTOCOL85_JW: ${{ secrets.TLKEY_PROTOCOL85_JW }}
+      TLKEY_PROTOCOL85_JD: ${{ secrets.TLKEY_PROTOCOL85_JD }}
+      TLKEY_PROTOCOL85_AX: ${{ secrets.TLKEY_PROTOCOL85_AX }}
+      TLKEY_PROTOCOL85_HJ: ${{ secrets.TLKEY_PROTOCOL85_HJ }}
+      TLKEY_PROTOCOL85_XL: ${{ secrets.TLKEY_PROTOCOL85_XL }}
+      TLKEY_PROTOCOL85_YY: ${{ secrets.TLKEY_PROTOCOL85_YY }}
 
     steps:
       - name: Checkout
@@ -71,9 +81,16 @@ jobs:
           } > client/keystore.properties
           chmod 600 client/keystore.properties
 
-      - name: Public build has no protocol keys
+      - name: Verify constant secrets
         run: |
-          echo "::notice::公开 Release 不注入 AES/MQTT 常量；78/85 帧与 KKS/YJ 云控需本地自备常量构建。带常量的私有构建请使用 keyed-release.yml。"
+          missing=0
+          for name in TLKEY_PROTOCOL78_KEY TLKEY_PROTOCOL85_BB; do
+            if [ -z "${!name}" ]; then
+              echo "::error::缺少 secret $name；keyed 公开 Release 需要协议常量"
+              missing=1
+            fi
+          done
+          exit "$missing"
 
       - name: Build release
         working-directory: client
