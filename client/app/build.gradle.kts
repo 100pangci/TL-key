@@ -40,7 +40,7 @@ val protocolKeys = listOf(
 
 // 版本号由 git 推导：
 // - versionCode = HEAD 可达提交数 + 1（无 git 仓库时为 1，每次提交自动 +1）
-// - versionName = 最近一个 tag（去掉前缀 v）；没有 tag 时回落到 0.1.0
+// - versionName = 最近一个正式版本 tag（去掉前缀 v，忽略 -keyed 草稿 tag）；没有 tag 时回落到 0.1.0
 // 发版时使用 vX.Y.Z tag，versionName 会自动取 X.Y.Z。
 fun gitOutput(vararg args: String): String? = runCatching {
     val process = ProcessBuilder(listOf("git") + args)
@@ -53,7 +53,15 @@ fun gitOutput(vararg args: String): String? = runCatching {
 
 val commitCount = gitOutput("rev-list", "--count", "HEAD")?.toIntOrNull() ?: 0
 val appVersionCode = commitCount + 1
-val appVersionName = gitOutput("describe", "--tags", "--abbrev=0")
+val appVersionName = gitOutput(
+    "describe",
+    "--tags",
+    "--abbrev=0",
+    "--match",
+    "v[0-9]*",
+    "--exclude",
+    "*-keyed",
+)
     ?.removePrefix("v")
     ?.takeIf { it.isNotBlank() }
     ?: "0.1.0"

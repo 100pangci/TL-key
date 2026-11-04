@@ -84,7 +84,7 @@ cd client
 - `versionCode = git rev-list --count HEAD + 1`
 - `versionName = 最近一个 tag`（去掉 `v` 前缀；没有 tag 时为 `0.1.0`）
 
-创建 `v1.0.0` tag 后构建，即得到 `versionName=1.0.0` 的正式包。
+创建 `vX.Y.Z` tag 后构建，即得到对应的 `versionName=X.Y.Z` 正式包；推送 tag 会触发 GitHub Release。
 
 ## CI / Release
 
