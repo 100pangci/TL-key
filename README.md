@@ -141,7 +141,7 @@ local/                  本地运行数据与私有协议文档（gitignored）
 
 - 单元测试覆盖 78/85/QGJ 帧、AES、token/login/ACK、车辆模型、MQTT endpoint、ECU 编解码。
 - 真车 BLE 时序、MQTT 云控、ECU 读写、OTA 触发仍需在真实车辆上验证；静态对齐不能代替实测。
-- 不同批次/车型的 AES 常量、ECU 能力位与多位字段语义仍存在 UNKNOWN，详见文档。
+- 不同批次/车型的 AES 常量、ECU 能力位与多位字段语义仍存在 UNKNOWN；相关细节保留在本地私有文档中。
 
 ## 免责声明与使用须知
 
