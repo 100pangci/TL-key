@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.ywpc.tlkey.App
+import com.ywpc.tlkey.BuildConfig
 import com.ywpc.tlkey.R
 import com.ywpc.tlkey.databinding.ActivityDiagnosticsBinding
 import kotlinx.coroutines.launch
@@ -106,16 +107,7 @@ class DiagnosticsActivity : AppCompatActivity() {
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
-    private fun versionName(): String = runCatching {
-        val info = packageManager.getPackageInfo(packageName, 0)
-        val code = if (Build.VERSION.SDK_INT >= 28) {
-            info.longVersionCode
-        } else {
-            @Suppress("DEPRECATION")
-            info.versionCode.toLong()
-        }
-        "${info.versionName} ($code)"
-    }.getOrDefault("未知")
+    private fun versionName(): String = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
 
     private fun maskMac(mac: String?): String {
         if (mac.isNullOrBlank()) return "无"

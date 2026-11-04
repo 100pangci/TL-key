@@ -41,7 +41,7 @@ val protocolKeys = listOf(
 // 版本号由 git 推导：
 // - versionCode = HEAD 可达提交数 + 1（无 git 仓库时为 1，每次提交自动 +1）
 // - versionName = 最近一个 tag（去掉前缀 v）；没有 tag 时回落到 0.1.0
-// 发版：git tag v0.1.0 后构建 release，versionName 即为 0.1.0。
+// 发版时使用 vX.Y.Z tag，versionName 会自动取 X.Y.Z。
 fun gitOutput(vararg args: String): String? = runCatching {
     val process = ProcessBuilder(listOf("git") + args)
         .directory(rootProject.projectDir)
