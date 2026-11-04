@@ -95,8 +95,7 @@ cd client
 ## CI / Release
 
 - `.github/workflows/ci.yml`：push / PR / 手动触发；运行单测、Lint、Debug 构建并上传 APK。
-- `.github/workflows/release.yml`：推送 `v*` tag 时运行；注入签名与协议常量 secrets，构建并发布 GitHub Release APK。
-- `.github/workflows/keyed-release.yml`：手动触发；构建带协议常量的 APK 并创建 **draft** Release，仅供仓库所有者私有使用，不应发布为公开 Release。
+- `.github/workflows/release.yml`：推送 `v*` tag 或手动触发；注入签名与协议常量 secrets，构建并发布 GitHub Release APK。
 
 > 本仓库所有者明确选择在公开 Release APK 中注入 AES/MQTT 常量。构建时注入只避免常量进入 Git 仓库，**不提供 APK 层面的保密**：APK 是二进制分发，下载者可从中提取这些常量。如果这不是你想要的，请只在本地构建，不要把带常量的 APK 发布到公开 Release。
 

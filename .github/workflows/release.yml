@@ -1,16 +1,31 @@
 name: Release
 
+# 推送 v* tag 时自动构建并发布到 GitHub Releases
+# 或手动触发（workflow_dispatch）—— 需填入已推送到仓库的 tag
+#
+# 本 workflow 构建的是 **keyed 公开版**：注入全部协议常量 secrets
+# （TLKEY_PROTOCOL78_KEY / TLKEY_PROTOCOL85_* / TLKEY_MQTT_*），
+# 产出的 APK 可直接安装使用，不需要二次配置。
+#
+# 注意：APK 是二进制分发，下载者可提取其中的常量。仓库所有者
+# 明确选择在公开 Release 中包含这些常量。
+
 on:
   push:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag（仅手动触发时填写，例如 v1.0.2）"
+        required: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  # 手动触发时按输入 tag 串行，tag push 时按 ref 串行
+  group: release-${{ github.event.inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -118,6 +133,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: client/app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true
           fail_on_unmatched_files: true
