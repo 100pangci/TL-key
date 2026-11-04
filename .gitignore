@@ -9,6 +9,8 @@ secrets.properties
 *.jks
 keystore.properties
 local.properties
+.env
+.env.*
 
 # ---------------------------------------------------------------------------
 # 官方 APK、反编译与逆向分析产物（体积大，且不随仓库分发）
