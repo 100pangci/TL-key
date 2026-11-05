@@ -47,6 +47,10 @@ class ControlTrace(val action: ControlAction) : TraceSink {
         "command" -> "发送"
         "ack" -> "应答"
         "session" -> "复用连接"
+        "ble-fail" -> "蓝牙失败"
+        "cloud" -> "云控"
+        "cloud-send" -> "云控发送"
+        "cloud-ack" -> "云控应答"
         else -> name
     }
 }

@@ -1,6 +1,7 @@
 package com.ywpc.tlkey.cloud
 
 import com.ywpc.tlkey.BuildConfig
+import com.ywpc.tlkey.protocol.ControlAction
 import com.ywpc.tlkey.vehicle.Vehicle
 
 /**
@@ -22,7 +23,20 @@ data class MqttEndpoint(
     val subscribeTopics: List<String>,
     val publishTopic: String,
     val tls: Boolean,
-)
+) {
+    /**
+     * 判断能否复用已有连接。clientId 每次 resolve 都带随机后缀，
+     * 只用于避免 broker 端的 clientId 冲突，不代表连接目标不同。
+     */
+    fun sameConnectionTarget(other: MqttEndpoint): Boolean =
+        host == other.host &&
+            username == other.username &&
+            password == other.password &&
+            imei == other.imei &&
+            subscribeTopics == other.subscribeTopics &&
+            publishTopic == other.publishTopic &&
+            tls == other.tls
+}
 
 enum class MqttUnavailableReason {
     UNSUPPORTED_MODEL,
@@ -194,6 +208,16 @@ enum class CloudCommand(
         LOCK, UNLOCK -> status.defenceErrorStatus?.takeIf { it != 0 }
         else -> null
     }
+}
+
+/** BLE 控制动作与云控指令一一对应。 */
+fun ControlAction.toCloudCommand(): CloudCommand = when (this) {
+    ControlAction.UNLOCK -> CloudCommand.UNLOCK
+    ControlAction.LOCK -> CloudCommand.LOCK
+    ControlAction.POWER_ON -> CloudCommand.POWER_ON
+    ControlAction.POWER_OFF -> CloudCommand.POWER_OFF
+    ControlAction.FIND -> CloudCommand.FIND
+    ControlAction.SEAT -> CloudCommand.SEAT
 }
 
 object MqttPayload {

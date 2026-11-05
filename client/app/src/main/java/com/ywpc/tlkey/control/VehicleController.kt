@@ -7,6 +7,11 @@ import com.ywpc.tlkey.ble.BleSession
 import com.ywpc.tlkey.ble.EcuSession
 import com.ywpc.tlkey.ble.QgjSession
 import com.ywpc.tlkey.ble.VehicleLink
+import com.ywpc.tlkey.cloud.MqttCloudClient
+import com.ywpc.tlkey.cloud.MqttConnectionState
+import com.ywpc.tlkey.cloud.MqttEndpointResult
+import com.ywpc.tlkey.cloud.MqttEndpoints
+import com.ywpc.tlkey.cloud.toCloudCommand
 import com.ywpc.tlkey.net.ApiException
 import com.ywpc.tlkey.protocol.ControlAction
 import com.ywpc.tlkey.protocol.EcuState
@@ -18,6 +23,7 @@ import com.ywpc.tlkey.vehicle.Vehicle
 import com.ywpc.tlkey.vehicle.VehicleRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,10 +32,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 enum class LinkState {
     IDLE,
     CONNECTING,
+    CLOUD,
     READY,
     BUSY,
 }
@@ -50,6 +58,7 @@ class VehicleController(
 
     private val context = context.applicationContext
     private val mutex = Mutex()
+    private val cloudClient = MqttCloudClient()
 
     private var session: VehicleLink? = null
     private var sessionVehicleId: String? = null
@@ -87,28 +96,7 @@ class VehicleController(
         val trace = ControlTrace(action)
 
         val result = try {
-            val vehicle = ensureVehicle()
-            val uid = resolveUid(vehicle)
-            val protocol = ProtocolSelector.create(vehicle.modelType)
-                ?: throw UnsupportedVehicleException(vehicle.modelType)
-
-            val active = obtainSession(vehicle, protocol, uid, trace)
-            _linkState.value = LinkState.BUSY
-            try {
-                active.send(action, trace)
-            } catch (t: BleException.Disconnected) {
-                // 复用的旧连接可能已被车端断开：释放后重连一次。
-                active.close()
-                if (session === active) {
-                    session = null
-                    sessionVehicleId = null
-                }
-                val fresh = openSession(vehicle, protocol, uid, trace)
-                fresh.send(action, trace)
-            }
-
-            _linkState.value = LinkState.READY
-            ControlResult.Success(action, trace)
+            controlLocked(action, trace)
         } catch (t: CancellationException) {
             closeSessionLocked()
             throw t
@@ -117,9 +105,109 @@ class VehicleController(
             t.toControlResult(trace)
         }
 
-        if (result is ControlResult.Success) scheduleIdleClose()
+        if (result is ControlResult.Success) {
+            scheduleIdleClose()
+        } else {
+            closeSessionLocked()
+        }
         persist(result)
         result
+    }
+
+    private suspend fun controlLocked(
+        action: ControlAction,
+        trace: ControlTrace,
+    ): ControlResult {
+        val vehicle = ensureVehicle()
+        val uid = resolveUid(vehicle)
+        val protocol = ProtocolSelector.create(vehicle.modelType)
+            ?: throw UnsupportedVehicleException(vehicle.modelType)
+
+        // 只有 BLE 会话尚未建立（还没向车辆发出控制指令）时才转云控，避免重复执行。
+        val active = try {
+            obtainSession(vehicle, protocol, uid, trace)
+        } catch (t: CancellationException) {
+            throw t
+        } catch (t: Throwable) {
+            trace.mark("ble-fail")
+            // 云控成功后会保留 MQTT 连接（由空闲关闭兜底），状态停在 CLOUD 更准确。
+            return tryCloud(vehicle, uid, action, trace, t) ?: throw t
+        }
+
+        _linkState.value = LinkState.BUSY
+        try {
+            active.send(action, trace)
+        } catch (t: BleException.Disconnected) {
+            // 复用的旧连接可能已被车端断开：释放后重连一次。
+            active.close()
+            if (session === active) {
+                session = null
+                sessionVehicleId = null
+            }
+            val fresh = openSession(vehicle, protocol, uid, trace)
+            fresh.send(action, trace)
+        }
+
+        _linkState.value = LinkState.READY
+        return ControlResult.Success(action, trace)
+    }
+
+    /**
+     * MQTT 云控兜底：仅在 BLE 连接/鉴权阶段失败、尚未发出控制指令时调用。
+     * 返回 null 表示车辆不支持云控或 carStatus 缺少连接参数，调用方保留原始 BLE 错误。
+     */
+    private suspend fun tryCloud(
+        vehicle: Vehicle,
+        uid: String,
+        action: ControlAction,
+        trace: ControlTrace,
+        bleFailure: Throwable,
+    ): ControlResult? {
+        val command = action.toCloudCommand()
+        val endpoint = when (val resolved = MqttEndpoints.resolve(vehicle, uid)) {
+            is MqttEndpointResult.Ready -> resolved.endpoint
+            is MqttEndpointResult.Unavailable -> return null
+        }
+
+        trace.mark("cloud")
+        _linkState.value = LinkState.CLOUD
+        val current = cloudClient.state.value
+        val connection = if (current is MqttConnectionState.Connected &&
+            current.endpoint.sameConnectionTarget(endpoint)
+        ) {
+            current
+        } else {
+            withContext(Dispatchers.IO) {
+                cloudClient.connect(endpoint)
+                cloudClient.state.value
+            }
+        }
+        if (connection !is MqttConnectionState.Connected) {
+            val reason = (connection as? MqttConnectionState.Failed)?.message ?: "连接失败"
+            return cloudFailure(trace, bleFailure, "云控连接失败：$reason")
+        }
+
+        trace.mark("cloud-send")
+        val sent = cloudClient.send(command)
+        if (sent.ok) {
+            if (command.needsAck) trace.mark("cloud-ack")
+            return ControlResult.Success(
+                action,
+                trace,
+                viaCloud = true,
+                sentOnly = !command.needsAck,
+            )
+        }
+        return cloudFailure(trace, bleFailure, "云控失败：${sent.message}")
+    }
+
+    private fun cloudFailure(
+        trace: ControlTrace,
+        bleFailure: Throwable,
+        cloudMessage: String,
+    ): ControlResult {
+        val bleMessage = bleFailure.toControlResult(trace).userMessage()
+        return ControlResult.Unknown(trace, "$bleMessage；$cloudMessage")
     }
 
     /** 不阻塞调用方；真正关闭时会和正在执行的控制串行。 */
@@ -302,6 +390,7 @@ class VehicleController(
         session?.close()
         session = null
         sessionVehicleId = null
+        cloudClient.disconnect()
         _linkState.value = LinkState.IDLE
     }
 

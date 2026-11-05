@@ -87,6 +87,40 @@ class MqttEndpointTest {
     }
 
     @Test
+    fun connectionTargetComparison_ignoresRandomClientId() {
+        val first = (
+            MqttEndpoints.resolve(
+                vehicle(
+                    modelType = 283,
+                    imeiGps = "GPS-1",
+                    userId = "uid-9",
+                    mqUsername = "mq-user",
+                    mqPassword = "mq-pass",
+                ),
+                uid = "uid-9",
+                randomSuffix = "001",
+            ) as MqttEndpointResult.Ready
+            ).endpoint
+        val second = (
+            MqttEndpoints.resolve(
+                vehicle(
+                    modelType = 283,
+                    imeiGps = "GPS-1",
+                    userId = "uid-9",
+                    mqUsername = "mq-user",
+                    mqPassword = "mq-pass",
+                ),
+                uid = "uid-9",
+                randomSuffix = "002",
+            ) as MqttEndpointResult.Ready
+            ).endpoint
+
+        assertFalse(first.clientId == second.clientId)
+        assertTrue(first.sameConnectionTarget(second))
+        assertFalse(first.sameConnectionTarget(second.copy(host = "ssl://other:6668")))
+    }
+
+    @Test
     fun c18_addsChargerAndCheckTopics() {
         val endpoint = (
             MqttEndpoints.resolve(
