@@ -99,7 +99,7 @@ class EcuActivity : AppCompatActivity() {
         val run = pendingRead
         pendingRead = false
         if (!run) return@registerForActivityResult
-        if (hasConnectPermission()) {
+        if (missingPermissions().isEmpty()) {
             startRead()
         } else {
             showResult(getString(R.string.ble_permission_needed), isError = true)
@@ -455,8 +455,8 @@ class EcuActivity : AppCompatActivity() {
     }
 
     private fun missingPermissions(): List<String> {
+        val needsScan = vehicle()?.mayNeedScan ?: true
         if (Build.VERSION.SDK_INT < 31) {
-            val needsScan = vehicle()?.bleAddress == null
             return if (needsScan && !hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 listOf(Manifest.permission.ACCESS_FINE_LOCATION)
             } else {
@@ -467,16 +467,11 @@ class EcuActivity : AppCompatActivity() {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 add(Manifest.permission.BLUETOOTH_CONNECT)
             }
-            if (vehicle()?.bleAddress == null &&
-                !hasPermission(Manifest.permission.BLUETOOTH_SCAN)
-            ) {
+            if (needsScan && !hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
                 add(Manifest.permission.BLUETOOTH_SCAN)
             }
         }
     }
-
-    private fun hasConnectPermission(): Boolean =
-        Build.VERSION.SDK_INT < 31 || hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
 
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED

@@ -50,6 +50,20 @@ class VehicleTest {
     }
 
     @Test
+    fun mayNeedScan_qgjScansEvenWithCachedAddress() {
+        assertTrue(
+            vehicle(modelType = 8, mac = "AABBCCDDEEFF", btMac = "112233445566").mayNeedScan,
+        )
+        assertTrue(
+            vehicle(modelType = 283, mac = "AABBCCDDEEFF", btMac = "112233445566").mayNeedScan,
+        )
+        assertFalse(
+            vehicle(modelType = 3, mac = "AABBCCDDEEFF", btMac = "112233445566").mayNeedScan,
+        )
+        assertTrue(vehicle(modelType = 3, mac = "").mayNeedScan)
+    }
+
+    @Test
     fun mergedWith_keepsCachedBleCredentialsWhenListOmitsThem() {
         val cached = vehicle(
             modelType = 3,

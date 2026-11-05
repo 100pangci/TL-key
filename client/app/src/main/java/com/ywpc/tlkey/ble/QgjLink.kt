@@ -65,7 +65,7 @@ class QgjLink(
     val hasGpsChannel: Boolean
         get() = gpsTx != null && gpsRx != null
 
-    suspend fun connect() {
+    suspend fun connect(timeoutMs: Long = CONNECT_TIMEOUT_MS) {
         if (closed) throw BleException.Disconnected()
         val adapter = bluetoothAdapter()
         if (!adapter.isEnabled) throw BleException.BluetoothDisabled()
@@ -89,7 +89,7 @@ class QgjLink(
         val gatt = GattClient(context, device)
         client = gatt
         try {
-            gatt.connect(CONNECT_TIMEOUT_MS)
+            gatt.connect(timeoutMs)
             val services = gatt.discoverServices(DISCOVER_TIMEOUT_MS)
 
             val v2 = services.firstOrNull { it.uuid == BleUuids.SERVICE_QGJ_V2 }

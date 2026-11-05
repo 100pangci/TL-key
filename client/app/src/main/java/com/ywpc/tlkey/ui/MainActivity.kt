@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         val action = pendingAction
         pendingAction = null
         if (action != null) {
-            if (hasConnectPermission()) {
+            if (missingPermissions().isEmpty()) {
                 perform(action)
             } else {
                 showEvent(getString(R.string.ble_permission_needed), isError = true)
@@ -273,12 +273,13 @@ class MainActivity : AppCompatActivity() {
         val textRes = when (state) {
             LinkState.IDLE -> R.string.state_idle
             LinkState.CONNECTING -> R.string.state_connecting
+            LinkState.SEARCHING -> R.string.state_searching
             LinkState.READY -> R.string.state_ready
             LinkState.BUSY -> R.string.state_busy
         }
         val colorRes = when (state) {
             LinkState.IDLE -> R.color.status_neutral
-            LinkState.CONNECTING, LinkState.BUSY -> R.color.status_busy
+            LinkState.CONNECTING, LinkState.SEARCHING, LinkState.BUSY -> R.color.status_busy
             LinkState.READY -> R.color.status_ok
         }
         binding.tvBleState.setText(textRes)
@@ -338,21 +339,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun ensureConnectPermission(action: ControlAction): Boolean {
-        if (hasConnectPermission()) return true
-        pendingAction = action
         val missing = missingPermissions()
-        if (missing.isEmpty()) {
-            pendingAction = null
-            showEvent(getString(R.string.ble_permission_needed), isError = true)
-            return false
-        }
+        if (missing.isEmpty()) return true
+        pendingAction = action
         permissionLauncher.launch(missing.toTypedArray())
         return false
     }
 
     private fun missingPermissions(): List<String> {
+        val needsScan = app.controller.cachedVehicle()?.mayNeedScan ?: true
         if (Build.VERSION.SDK_INT < 31) {
-            val needsScan = app.controller.cachedVehicle()?.bleAddress == null
             return if (needsScan && !hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 listOf(Manifest.permission.ACCESS_FINE_LOCATION)
             } else {
@@ -363,16 +359,11 @@ class MainActivity : AppCompatActivity() {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 add(Manifest.permission.BLUETOOTH_CONNECT)
             }
-            if (app.controller.cachedVehicle()?.bleAddress == null &&
-                !hasPermission(Manifest.permission.BLUETOOTH_SCAN)
-            ) {
+            if (needsScan && !hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
                 add(Manifest.permission.BLUETOOTH_SCAN)
             }
         }
     }
-
-    private fun hasConnectPermission(): Boolean =
-        Build.VERSION.SDK_INT < 31 || hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
 
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED

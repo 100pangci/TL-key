@@ -32,6 +32,17 @@ data class BindingDevice(
     val harmony: Boolean = false,
 )
 
+/**
+ * QGJ 兜底扫描结果。
+ *
+ * - [identityMatch]：广播身份与服务器 mac 直接匹配，可直接连接 [BindingDevice.address]。
+ * - [harmonyCandidates]：名字匹配的 Harmony 设备；身份只能在连接后读 2a23 校验。
+ */
+data class QgjScanOutcome(
+    val identityMatch: BindingDevice?,
+    val harmonyCandidates: List<BindingDevice>,
+)
+
 @SuppressLint("MissingPermission")
 class BleScanner(private val context: Context) {
 
@@ -77,6 +88,146 @@ class BleScanner(private val context: Context) {
             }
 
             continuation.invokeOnCancellation {
+                handler.removeCallbacksAndMessages(null)
+                runCatching { scanner.stopScan(callback) }
+            }
+
+            try {
+                scanner.startScan(null, settings, callback)
+                handler.postDelayed({ finish(null) }, timeoutMs)
+            } catch (t: SecurityException) {
+                finish(null)
+            } catch (t: Throwable) {
+                finish(null)
+            }
+        }
+    }
+
+    /**
+     * QGJ 控车兜底扫描：按服务器 `mac`（车辆身份 MAC）匹配广播身份。
+     *
+     * 匹配规则与 Kuyi `ScannedDevice` 一致。Harmony 的 System ID 只能在连接后从
+     * 180a/2a23 读取，因此这里按服务器名称或官方 QGJ 广播前缀收集候选，
+     * 由调用方连接后校验；名称不一致时仍保留其他 FDEE 设备作为补充候选。
+     */
+    suspend fun scanQgj(
+        identityMac: String,
+        nameHint: String? = null,
+        timeoutMs: Long = 8_000,
+        maxHarmonyCandidates: Int = 4,
+    ): QgjScanOutcome {
+        val adapter = bluetoothAdapter()
+        if (!adapter.isEnabled) throw BleException.BluetoothDisabled()
+        if (!hasScanPermission()) throw BleException.PermissionDenied()
+
+        // 已配对设备可能不再广播：Kuyi 从 Q_BASH_<身份 MAC> 形式的名称解析身份。
+        val bondedMatch = runCatching {
+            adapter.bondedDevices.orEmpty().firstOrNull { device ->
+                val name = device.name ?: return@firstOrNull false
+                name.startsWith("Q_BASH_") &&
+                    QgjCodec.matchesIdentity(name.substring(7), identityMac)
+            }
+        }.getOrNull()
+        if (bondedMatch != null) {
+            return QgjScanOutcome(
+                identityMatch = BindingDevice(
+                    name = runCatching { bondedMatch.name }.getOrNull().orEmpty(),
+                    address = bondedMatch.address,
+                    rssi = Int.MAX_VALUE,
+                    manufacturerData = null,
+                ),
+                harmonyCandidates = emptyList(),
+            )
+        }
+
+        val scanner = adapter.bluetoothLeScanner ?: throw BleException.DeviceNotFound()
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
+        val qgjPrefixes = BindingNames.matches
+            .filter { it.modelType == 8 || it.modelType == 283 }
+            .map { it.prefix }
+
+        return suspendCancellableCoroutine { continuation ->
+            val handler = Handler(Looper.getMainLooper())
+            val preferred = LinkedHashMap<String, BindingDevice>()
+            val others = LinkedHashMap<String, BindingDevice>()
+            var finished = false
+            lateinit var callback: ScanCallback
+
+            fun finish(match: BindingDevice?) {
+                if (finished) return
+                finished = true
+                handler.removeCallbacksAndMessages(null)
+                runCatching { scanner.stopScan(callback) }
+                if (continuation.isActive) {
+                    val ordered = preferred.values.sortedByDescending { it.rssi } +
+                        others.values.sortedByDescending { it.rssi }
+                    continuation.resume(
+                        QgjScanOutcome(
+                            identityMatch = match,
+                            harmonyCandidates = ordered
+                                .distinctBy { it.address }
+                                .take(maxHarmonyCandidates),
+                        ),
+                    )
+                }
+            }
+
+            callback = object : ScanCallback() {
+                override fun onScanResult(callbackType: Int, result: ScanResult) {
+                    if (finished) return
+                    val record = result.scanRecord
+                    val name = record?.deviceName
+                        ?: runCatching { result.device.name }.getOrNull()
+                        ?: ""
+                    val data = record
+                        ?.getManufacturerSpecificData()
+                        ?.takeIf { it.size() > 0 }
+                        ?.let { array -> array.get(array.keyAt(0)) }
+                    val harmony = record?.serviceData?.keys
+                        ?.let { keys -> QgjCodec.isHarmonyServiceData(keys.map { it.uuid }) }
+                        ?: false
+                    val identity = QgjCodec.identityMacForScan(
+                        result.device.address,
+                        data,
+                        harmony,
+                    )
+                    if (QgjCodec.matchesIdentity(identity, identityMac)) {
+                        finish(
+                            BindingDevice(
+                                name = name,
+                                address = result.device.address,
+                                rssi = result.rssi,
+                                manufacturerData = data?.copyOf(),
+                                harmony = harmony,
+                            ),
+                        )
+                        return
+                    }
+                    if (!harmony) return
+                    val preferredName = (!nameHint.isNullOrBlank() && name.startsWith(nameHint)) ||
+                        qgjPrefixes.any { name.startsWith(it) }
+                    val candidates = if (preferredName) preferred else others
+                    val existing = candidates[result.device.address]
+                    if (existing == null || result.rssi > existing.rssi) {
+                        candidates[result.device.address] = BindingDevice(
+                            name = name,
+                            address = result.device.address,
+                            rssi = result.rssi,
+                            manufacturerData = data?.copyOf(),
+                            harmony = true,
+                        )
+                    }
+                }
+
+                override fun onScanFailed(errorCode: Int) {
+                    finish(null)
+                }
+            }
+
+            continuation.invokeOnCancellation {
+                finished = true
                 handler.removeCallbacksAndMessages(null)
                 runCatching { scanner.stopScan(callback) }
             }

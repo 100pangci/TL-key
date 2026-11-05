@@ -30,6 +30,7 @@ import kotlinx.coroutines.sync.withLock
 enum class LinkState {
     IDLE,
     CONNECTING,
+    SEARCHING,
     READY,
     BUSY,
 }
@@ -269,7 +270,25 @@ class VehicleController(
     ): VehicleLink {
         session?.close()
         val fresh: VehicleLink = if (protocol.family == ProtocolFamily.QGJ) {
-            QgjSession(context, vehicle, uid)
+            QgjSession(
+                context = context,
+                vehicle = vehicle,
+                uid = uid,
+                onScanning = { _linkState.value = LinkState.SEARCHING },
+                onAddressResolved = { discovered ->
+                    // 只在成功鉴权后缓存扫描到的广播地址，避免把偶发匹配写死。
+                    val cached = vehicle.btMac?.let(Vehicle::formatMac)
+                    if (discovered != cached) {
+                        appScope.launch {
+                            runCatching {
+                                // 扫描期间车辆信息可能已被刷新，基于最新缓存只改 btMac。
+                                val latest = vehicleRepository.find(vehicle.id) ?: vehicle
+                                vehicleRepository.save(latest.copy(btMac = discovered))
+                            }
+                        }
+                    }
+                },
+            )
         } else {
             BleSession(context, vehicle, protocol, uid)
         }
