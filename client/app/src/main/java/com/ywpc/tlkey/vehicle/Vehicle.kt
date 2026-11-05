@@ -51,6 +51,14 @@ data class Vehicle(
         get() = modelType != 0 && bleAddress != null &&
             (passwordMain.isNotBlank() || passwordChildren.isNotEmpty() || modelType == 1 || modelType == 2)
 
+    /**
+     * 控车前可能需要扫描：
+     * - 没有可直连地址（既有逻辑，按广播名找车）；
+     * - QGJ 的服务器 `mac` 只是身份 MAC，没有缓存广播地址时必须扫描匹配。
+     */
+    val mayNeedScan: Boolean
+        get() = bleAddress == null || modelType == 8 || modelType == 283
+
     /** carStatus 已下发 broker 与账号时才允许云控。 */
     val hasMqttCredentials: Boolean
         get() = mqHost.isNotBlank() && mqUsername.isNotBlank()

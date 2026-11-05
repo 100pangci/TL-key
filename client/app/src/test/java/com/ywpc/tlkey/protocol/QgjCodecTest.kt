@@ -285,4 +285,73 @@ class QgjCodecTest {
         assertFalse(QgjCodec.isHarmonyServiceData(listOf(other)))
         assertFalse(QgjCodec.isHarmonyServiceData(emptyList()))
     }
+
+    @Test
+    fun scanIdentity_nonHarmonyPrefersManufacturerIdentity() {
+        val data8 = byteArrayOf(
+            0x00, 0x11,
+            0xAA.toByte(), 0xBB.toByte(), 0xCC.toByte(),
+            0xDD.toByte(), 0xEE.toByte(), 0xFF.toByte(),
+        )
+        assertEquals(
+            "AABBCCDDEEFF",
+            QgjCodec.identityMacForScan("11:22:33:44:55:66", data8, harmony = false),
+        )
+        val data6 = byteArrayOf(0x01, 0x02, 0x03, 0x04, 0x05, 0x06)
+        assertEquals(
+            "010203040506",
+            QgjCodec.identityMacForScan("11:22:33:44:55:66", data6, harmony = false),
+        )
+    }
+
+    @Test
+    fun scanIdentity_nonHarmonyFallsBackToAdvertisedAddress() {
+        assertEquals(
+            "112233445566",
+            QgjCodec.identityMacForScan("11:22:33:44:55:66", null, harmony = false),
+        )
+        assertEquals(
+            "112233445566",
+            QgjCodec.identityMacForScan(
+                "11:22:33:44:55:66",
+                byteArrayOf(1, 2),
+                harmony = false,
+            ),
+        )
+    }
+
+    @Test
+    fun scanIdentity_harmonyUsesLastByteMinusTwo() {
+        assertEquals(
+            "112233445564",
+            QgjCodec.identityMacForScan("11:22:33:44:55:66", null, harmony = true),
+        )
+        // 末字节 0x01 - 2 按 byte 回绕为 0xFF。
+        assertEquals(
+            "1122334455FF",
+            QgjCodec.identityMacForScan("11:22:33:44:55:01", null, harmony = true),
+        )
+    }
+
+    @Test
+    fun scanIdentity_harmonyIgnoresManufacturerData() {
+        val data = byteArrayOf(
+            0x00, 0x11,
+            0xAA.toByte(), 0xBB.toByte(), 0xCC.toByte(),
+            0xDD.toByte(), 0xEE.toByte(), 0xFF.toByte(),
+        )
+        assertEquals(
+            "112233445564",
+            QgjCodec.identityMacForScan("11:22:33:44:55:66", data, harmony = true),
+        )
+    }
+
+    @Test
+    fun matchesIdentity_ignoresSeparatorsAndCase() {
+        assertTrue(QgjCodec.matchesIdentity("aa:bb:cc:dd:ee:ff", "AABBCCDDEEFF"))
+        assertTrue(QgjCodec.matchesIdentity("1122334455667788", "11:22:33:44:55:66:77:88"))
+        assertFalse(QgjCodec.matchesIdentity(null, "AABBCCDDEEFF"))
+        assertFalse(QgjCodec.matchesIdentity("AABBCCDDEEFF", ""))
+        assertFalse(QgjCodec.matchesIdentity("AABBCCDDEEFE", "AABBCCDDEEFF"))
+    }
 }

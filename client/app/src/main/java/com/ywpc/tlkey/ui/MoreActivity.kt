@@ -39,7 +39,7 @@ class MoreActivity : AppCompatActivity() {
         val runSeat = pendingSeat
         pendingSeat = false
         if (!runSeat) return@registerForActivityResult
-        if (hasConnectPermission()) {
+        if (missingPermissions().isEmpty()) {
             performSeat()
         } else {
             showStatus(getString(R.string.ble_permission_needed), isError = true)
@@ -162,20 +162,16 @@ class MoreActivity : AppCompatActivity() {
     }
 
     private fun ensureConnectPermission(): Boolean {
-        if (hasConnectPermission()) return true
         val missing = missingPermissions()
-        if (missing.isEmpty()) {
-            showStatus(getString(R.string.ble_permission_needed), isError = true)
-            return false
-        }
+        if (missing.isEmpty()) return true
         pendingSeat = true
         permissionLauncher.launch(missing.toTypedArray())
         return false
     }
 
     private fun missingPermissions(): List<String> {
+        val needsScan = app.controller.cachedVehicle()?.mayNeedScan ?: true
         if (Build.VERSION.SDK_INT < 31) {
-            val needsScan = app.controller.cachedVehicle()?.bleAddress == null
             return if (needsScan && !hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 listOf(Manifest.permission.ACCESS_FINE_LOCATION)
             } else {
@@ -186,16 +182,11 @@ class MoreActivity : AppCompatActivity() {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 add(Manifest.permission.BLUETOOTH_CONNECT)
             }
-            if (app.controller.cachedVehicle()?.bleAddress == null &&
-                !hasPermission(Manifest.permission.BLUETOOTH_SCAN)
-            ) {
+            if (needsScan && !hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
                 add(Manifest.permission.BLUETOOTH_SCAN)
             }
         }
     }
-
-    private fun hasConnectPermission(): Boolean =
-        Build.VERSION.SDK_INT < 31 || hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
 
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED

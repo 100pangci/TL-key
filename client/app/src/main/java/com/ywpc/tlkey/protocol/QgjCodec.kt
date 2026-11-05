@@ -1,6 +1,7 @@
 package com.ywpc.tlkey.protocol
 
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 import java.util.UUID
 
 /**
@@ -246,6 +247,41 @@ object QgjCodec {
             else -> return null
         }
         return bytes.joinToString("") { "%02X".format(it) }
+    }
+
+    /**
+     * 扫描阶段可用的身份 MAC，与 Kuyi `ScannedDevice.getIdentityMac()` 一致：
+     * - 非 Harmony：优先 manufacturer data 中的 6 字节身份，缺失时回退广播地址；
+     * - Harmony：身份是广播地址末字节减 2，manufacturer data 不参与；
+     *   真正的 System ID 只能连接后读 180a/2a23。
+     */
+    fun identityMacForScan(
+        advertisedAddress: String,
+        manufacturerData: ByteArray?,
+        harmony: Boolean,
+    ): String? {
+        if (!harmony) {
+            identityMac(manufacturerData)?.let { return it }
+        }
+        val address = normalizeIdentity(advertisedAddress) ?: return null
+        if (!harmony) return address
+        val last = address.takeLast(2).toIntOrNull(16) ?: return null
+        return address.dropLast(2) + "%02X".format(Locale.ROOT, (last - 2) and 0xFF)
+    }
+
+    /** 去掉冒号/空白并转大写；服务器 mac 与广播身份的大小写、分隔符不一定一致。 */
+    fun normalizeIdentity(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        val hex = raw.filter { char ->
+            char in '0'..'9' || char in 'a'..'f' || char in 'A'..'F'
+        }.uppercase(Locale.ROOT)
+        return hex.takeIf { it.isNotEmpty() }
+    }
+
+    fun matchesIdentity(candidate: String?, expected: String?): Boolean {
+        val left = normalizeIdentity(candidate) ?: return false
+        val right = normalizeIdentity(expected) ?: return false
+        return left == right
     }
 
     private fun int32(value: Int): ByteArray = byteArrayOf(
