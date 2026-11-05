@@ -9,6 +9,9 @@ sealed interface ControlResult {
     data class Success(
         val action: ControlAction,
         override val trace: ControlTrace,
+        val viaCloud: Boolean = false,
+        /** 云控 QoS 0 指令只确认已交给 socket，没有车辆回执。 */
+        val sentOnly: Boolean = false,
     ) : ControlResult
 
     data class BluetoothDisabled(override val trace: ControlTrace) : ControlResult
@@ -44,7 +47,12 @@ val ControlResult.isSuccess: Boolean
     get() = this is ControlResult.Success
 
 fun ControlResult.userMessage(): String = when (this) {
-    is ControlResult.Success -> "${action.displayName()}成功"
+    is ControlResult.Success ->
+        if (sentOnly) {
+            "${action.displayName()}指令已发送（云控，无回执）"
+        } else {
+            "${action.displayName()}成功${if (viaCloud) "（云控）" else ""}"
+        }
     is ControlResult.BluetoothDisabled -> "蓝牙未开启"
     is ControlResult.PermissionDenied -> "缺少蓝牙权限"
     is ControlResult.DeviceNotFound -> "未找到车辆"

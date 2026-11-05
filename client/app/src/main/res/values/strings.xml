@@ -54,6 +54,7 @@
 
     <string name="state_idle">未连接</string>
     <string name="state_connecting">正在连接车辆…</string>
+    <string name="state_cloud">正在使用云控…</string>
     <string name="state_authenticating">正在与车辆鉴权…</string>
     <string name="state_ready">已连接 · 可控制</string>
     <string name="state_busy">执行中…</string>

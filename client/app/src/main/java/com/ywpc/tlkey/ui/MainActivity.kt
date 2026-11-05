@@ -273,12 +273,13 @@ class MainActivity : AppCompatActivity() {
         val textRes = when (state) {
             LinkState.IDLE -> R.string.state_idle
             LinkState.CONNECTING -> R.string.state_connecting
+            LinkState.CLOUD -> R.string.state_cloud
             LinkState.READY -> R.string.state_ready
             LinkState.BUSY -> R.string.state_busy
         }
         val colorRes = when (state) {
             LinkState.IDLE -> R.color.status_neutral
-            LinkState.CONNECTING, LinkState.BUSY -> R.color.status_busy
+            LinkState.CONNECTING, LinkState.CLOUD, LinkState.BUSY -> R.color.status_busy
             LinkState.READY -> R.color.status_ok
         }
         binding.tvBleState.setText(textRes)

@@ -64,6 +64,8 @@ class MiniMqttClient(
             val active = if (uri.scheme == "ssl") {
                 val factory = SSLSocketFactory.getDefault() as SSLSocketFactory
                 (factory.createSocket(tcp, host, port, true) as SSLSocket).apply {
+                    // 握手也在超时内完成，避免 TLS 阶段无限阻塞控制协程。
+                    soTimeout = CONNECT_TIMEOUT_MS
                     sslParameters = sslParameters.apply {
                         // 与 HttpsURLConnection 相同的证书链 + 主机名校验。
                         endpointIdentificationAlgorithm = "HTTPS"
