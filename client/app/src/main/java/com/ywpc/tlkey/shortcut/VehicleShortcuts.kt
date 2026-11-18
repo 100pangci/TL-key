@@ -108,12 +108,15 @@ object VehicleShortcuts {
     }
 
     private fun iconFor(action: String): Int = when (action) {
-        "UNLOCK" -> R.drawable.ic_unlock
-        "LOCK" -> R.drawable.ic_lock
-        "POWER_ON", "POWER_OFF" -> R.drawable.ic_power
-        "FIND" -> R.drawable.ic_find
-        "SEAT" -> R.drawable.ic_seat
-        else -> R.drawable.ic_cloud
+        "UNLOCK" -> R.drawable.ic_shortcut_unlock
+        "LOCK" -> R.drawable.ic_shortcut_lock
+        "POWER_ON" -> R.drawable.ic_shortcut_power_on
+        "POWER_OFF" -> R.drawable.ic_shortcut_power_off
+        "FIND" -> R.drawable.ic_shortcut_find
+        "SEAT" -> R.drawable.ic_shortcut_seat
+        "MUTE" -> R.drawable.ic_shortcut_mute
+        "UNMUTE" -> R.drawable.ic_shortcut_unmute
+        else -> R.drawable.ic_shortcut_cloud
     }
 
     private fun newCapability(): String = ByteArray(CAPABILITY_BYTES)
