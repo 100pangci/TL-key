@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:pathData="M22,4h64a18,18 0,0 1,18 18v64a18,18 0,0 1,-18 18h-64a18,18 0,0 1,-18 -18v-64a18,18 0,0 1,18 -18z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:endX="96"
+                android:endY="104"
+                android:startX="14"
+                android:startY="8"
+                android:type="linear">
+                <item android:color="#FF17473C" android:offset="0" />
+                <item android:color="#FF0A2A23" android:offset="0.55" />
+                <item android:color="#FF051A16" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M22,4h64a18,18 0,0 1,18 18v64a18,18 0,0 1,-18 18h-64a18,18 0,0 1,-18 -18v-64a18,18 0,0 1,18 -18z"
+        android:strokeColor="#3394A3B8"
+        android:strokeWidth="1.5" />
+
+    <path android:pathData="M54,18a36,36 0,1 1,0 72a36,36 0,1 1,0 -72z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="54"
+                android:centerY="52"
+                android:gradientRadius="42"
+                android:type="radial">
+                <item android:color="#4094A3B8" android:offset="0" />
+                <item android:color="#0094A3B8" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <group
+        android:scaleX="2.0833"
+        android:scaleY="2.0833"
+        android:translateX="29"
+        android:translateY="29">
+        <path
+            android:fillColor="#FFE2E8F0"
+            android:pathData="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM19,18H6c-2.21,0 -4,-1.79 -4,-4 0,-2.05 1.53,-3.76 3.56,-3.97l1.07,-0.11 0.5,-0.95C8.08,7.14 9.94,6 12,6c2.62,0 4.88,1.86 5.39,4.43l0.3,1.5 1.53,0.11c1.56,0.1 2.78,1.41 2.78,2.96 0,1.65 -1.35,3 -3,3z" />
+    </group>
+</vector>

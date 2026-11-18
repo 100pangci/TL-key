@@ -46,6 +46,11 @@ class SecureStorage(context: Context) {
         get() = getString(KEY_ACTIVE_VEHICLE)
         set(value) = putString(KEY_ACTIVE_VEHICLE, value)
 
+    /** App-private capability map for pinned shortcuts; encrypted and cleared with the account. */
+    var shortcutCapabilities: String?
+        get() = getString(KEY_SHORTCUT_CAPABILITIES)
+        set(value) = putString(KEY_SHORTCUT_CAPABILITIES, value)
+
     fun hasSession(): Boolean = !token.isNullOrBlank()
 
     fun clearSession() {
@@ -130,5 +135,6 @@ class SecureStorage(context: Context) {
         const val KEY_VEHICLE = "vehicle"
         const val KEY_VEHICLES = "vehicles"
         const val KEY_ACTIVE_VEHICLE = "active_vehicle"
+        const val KEY_SHORTCUT_CAPABILITIES = "shortcut_capabilities"
     }
 }

@@ -62,8 +62,8 @@ fun ControlResult.userMessage(): String = when (this) {
 fun ControlAction.displayName(): String = when (this) {
     ControlAction.UNLOCK -> "开锁"
     ControlAction.LOCK -> "上锁"
-    ControlAction.POWER_ON -> "开机"
-    ControlAction.POWER_OFF -> "关机"
+    ControlAction.POWER_ON -> "上电"
+    ControlAction.POWER_OFF -> "断电"
     ControlAction.FIND -> "寻车"
     ControlAction.SEAT -> "座桶"
 }

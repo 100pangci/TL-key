@@ -16,7 +16,13 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ywpc.tlkey.App
 import com.ywpc.tlkey.R
 import com.ywpc.tlkey.control.isSuccess
+import com.ywpc.tlkey.control.displayName
 import com.ywpc.tlkey.control.userMessage
+import com.ywpc.tlkey.cloud.CloudCommand
+import com.ywpc.tlkey.cloud.MqttEndpointResult
+import com.ywpc.tlkey.cloud.MqttEndpoints
+import com.ywpc.tlkey.shortcut.VehicleShortcuts
+import com.ywpc.tlkey.vehicle.Vehicle
 import com.ywpc.tlkey.databinding.ActivityMoreBinding
 import com.ywpc.tlkey.protocol.ControlAction
 import kotlinx.coroutines.CancellationException
@@ -58,6 +64,11 @@ class MoreActivity : AppCompatActivity() {
         setupEdgeToEdge(binding.root)
         binding.btnBack.setOnClickListener { finish() }
         binding.btnSeat.setOnClickListener { performSeat() }
+        binding.btnSeat.setOnLongClickListener {
+            app.controller.cachedVehicle()?.let { pinShortcut(it, VehicleShortcuts.Channel.BLE, ControlAction.SEAT.name) }
+            true
+        }
+        binding.btnAddShortcut.setOnClickListener { chooseShortcutVehicle() }
         binding.btnCloud.setOnClickListener {
             startActivity(Intent(this, CloudControlActivity::class.java))
         }
@@ -73,6 +84,65 @@ class MoreActivity : AppCompatActivity() {
         }
         binding.btnLogout.setOnClickListener { confirmLogout() }
         setBusy(false)
+    }
+
+    private fun chooseShortcutVehicle() {
+        val vehicles = app.controller.cachedVehicles()
+        if (vehicles.isEmpty()) {
+            showStatus("没有已缓存车辆，请先添加车辆", isError = true)
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("选择快捷方式车辆")
+            .setItems(
+                vehicles.map { "${it.name.ifBlank { it.carType }} · ${it.protocolLabel}" }.toTypedArray(),
+            ) { _, index ->
+                chooseShortcutAction(vehicles[index])
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private data class ShortcutChoice(
+        val channel: VehicleShortcuts.Channel,
+        val action: String,
+        val label: String,
+    )
+
+    private fun chooseShortcutAction(vehicle: Vehicle) {
+        val choices = buildList<ShortcutChoice> {
+            if (vehicle.hasBleCredentials) {
+                ControlAction.entries.forEach { action ->
+                    add(ShortcutChoice(VehicleShortcuts.Channel.BLE, action.name, "蓝牙 · ${action.displayName()}"))
+                }
+            }
+            val uid = vehicle.userId.takeIf(String::isNotBlank) ?: app.authRepository.currentUid().orEmpty()
+            if (MqttEndpoints.resolve(vehicle, uid) is MqttEndpointResult.Ready) {
+                CloudCommand.entries.filter { it != CloudCommand.REFRESH }.forEach { command ->
+                    add(ShortcutChoice(VehicleShortcuts.Channel.CLOUD, command.name, "云控 · ${command.label}"))
+                }
+            }
+        }
+        if (choices.isEmpty()) {
+            showStatus("该车没有可用的控车动作", isError = true)
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("${vehicle.name.ifBlank { vehicle.carType }} · 选择动作")
+            .setItems(choices.map { it.label }.toTypedArray()) { _, index ->
+                val choice = choices[index]
+                pinShortcut(vehicle, choice.channel, choice.action)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun pinShortcut(vehicle: Vehicle, channel: VehicleShortcuts.Channel, action: String) {
+        val result = VehicleShortcuts.pin(this, vehicle, channel, action)
+        val message = VehicleShortcuts.pinMessage(result)
+        showStatus(message, isError = result != VehicleShortcuts.PinResult.Requested &&
+            result != VehicleShortcuts.PinResult.AlreadyPinned)
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     private fun performSeat() {
@@ -137,6 +207,7 @@ class MoreActivity : AppCompatActivity() {
     private fun setBusy(value: Boolean) {
         busy = value
         binding.btnSeat.isEnabled = !value
+        binding.btnAddShortcut.isEnabled = !value
         binding.btnCloud.isEnabled = !value
         binding.btnOta.isEnabled = !value
         binding.btnEcu.isEnabled = !value

@@ -3,10 +3,12 @@ package com.ywpc.tlkey.auth
 import android.content.Context
 import com.ywpc.tlkey.vehicle.Vehicle
 import com.ywpc.tlkey.vehicle.VehicleRepository
+import com.ywpc.tlkey.storage.SecureStorage
 
 class LoginManager(
     private val authRepository: AuthRepository,
     private val vehicleRepository: VehicleRepository,
+    private val secureStorage: SecureStorage,
 ) {
 
     suspend fun requestSms(phone: String, ticket: String, randstr: String): SmsRequestResult {
@@ -62,5 +64,6 @@ class LoginManager(
     fun logout() {
         authRepository.logout()
         vehicleRepository.clear()
+        secureStorage.shortcutCapabilities = null
     }
 }

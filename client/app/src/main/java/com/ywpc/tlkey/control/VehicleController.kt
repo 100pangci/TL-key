@@ -80,14 +80,23 @@ class VehicleController(
 
     suspend fun lock(): ControlResult = control(ControlAction.LOCK)
 
-    suspend fun control(action: ControlAction): ControlResult = mutex.withLock {
+    suspend fun control(action: ControlAction): ControlResult = controlLocked(action, null)
+
+    /** 对指定的已缓存车辆执行控制，不改变当前选中的车辆。 */
+    suspend fun control(action: ControlAction, vehicleId: String): ControlResult =
+        controlLocked(action, vehicleId)
+
+    private suspend fun controlLocked(action: ControlAction, vehicleId: String?): ControlResult = mutex.withLock {
         idleJob?.cancel()
         idleJob = null
         _linkState.value = LinkState.CONNECTING
         val trace = ControlTrace(action)
 
         val result = try {
-            val vehicle = ensureVehicle()
+            val vehicle = if (vehicleId == null) ensureVehicle() else {
+                vehicleRepository.find(vehicleId)?.takeIf { it.hasBleCredentials }
+                    ?: throw NoVehicleException()
+            }
             val uid = resolveUid(vehicle)
             val protocol = ProtocolSelector.create(vehicle.modelType)
                 ?: throw UnsupportedVehicleException(vehicle.modelType)

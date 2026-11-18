@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:pathData="M22,4h64a18,18 0,0 1,18 18v64a18,18 0,0 1,-18 18h-64a18,18 0,0 1,-18 -18v-64a18,18 0,0 1,18 -18z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:endX="96"
+                android:endY="104"
+                android:startX="14"
+                android:startY="8"
+                android:type="linear">
+                <item android:color="#FF17473C" android:offset="0" />
+                <item android:color="#FF0A2A23" android:offset="0.55" />
+                <item android:color="#FF051A16" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M22,4h64a18,18 0,0 1,18 18v64a18,18 0,0 1,-18 18h-64a18,18 0,0 1,-18 -18v-64a18,18 0,0 1,18 -18z"
+        android:strokeColor="#33FBBF24"
+        android:strokeWidth="1.5" />
+
+    <path android:pathData="M54,18a36,36 0,1 1,0 72a36,36 0,1 1,0 -72z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="54"
+                android:centerY="52"
+                android:gradientRadius="42"
+                android:type="radial">
+                <item android:color="#40FBBF24" android:offset="0" />
+                <item android:color="#00FBBF24" android:offset="1" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <group
+        android:scaleX="2.0833"
+        android:scaleY="2.0833"
+        android:translateX="29"
+        android:translateY="29">
+        <path
+            android:fillColor="#FFFDE68A"
+            android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13c0,-3.87 -3.13,-7 -7,-7zM12,11.5c-1.38,0 -2.5,-1.12 -2.5,-2.5s1.12,-2.5 2.5,-2.5 2.5,1.12 2.5,2.5 -1.12,2.5 -2.5,2.5z" />
+    </group>
+</vector>
