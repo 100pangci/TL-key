@@ -64,7 +64,7 @@ object VehicleShortcuts {
     }
 
     fun pinMessage(result: PinResult): String = when (result) {
-        PinResult.Requested -> "已提交请求，请在系统提示中确认"
+        PinResult.Requested -> "已提交创建桌面快捷方式请求，请在系统提示中确认"
         PinResult.AlreadyPinned -> "该快捷方式已在桌面"
         PinResult.Unsupported -> "当前启动器不支持添加桌面快捷方式"
         PinResult.Rejected -> "系统未能添加快捷方式，请重试"
