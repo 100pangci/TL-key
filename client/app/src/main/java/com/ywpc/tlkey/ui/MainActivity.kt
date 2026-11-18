@@ -25,6 +25,7 @@ import com.ywpc.tlkey.control.isSuccess
 import com.ywpc.tlkey.control.userMessage
 import com.ywpc.tlkey.databinding.ActivityMainBinding
 import com.ywpc.tlkey.protocol.ControlAction
+import com.ywpc.tlkey.shortcut.VehicleShortcuts
 import com.ywpc.tlkey.vehicle.Vehicle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -109,11 +110,28 @@ class MainActivity : AppCompatActivity() {
         binding.btnPowerOn.setOnClickListener { perform(ControlAction.POWER_ON) }
         binding.btnPowerOff.setOnClickListener { perform(ControlAction.POWER_OFF) }
         binding.btnFind.setOnClickListener { perform(ControlAction.FIND) }
+        listOf(
+            binding.btnUnlock to ControlAction.UNLOCK,
+            binding.btnLock to ControlAction.LOCK,
+            binding.btnPowerOn to ControlAction.POWER_ON,
+            binding.btnPowerOff to ControlAction.POWER_OFF,
+            binding.btnFind to ControlAction.FIND,
+        ).forEach { (button, action) ->
+            button.setOnLongClickListener {
+                currentVehicle()?.let { vehicle -> pinShortcut(vehicle, VehicleShortcuts.Channel.BLE, action.name) }
+                true
+            }
+        }
 
         // 主页只保留开锁/上锁、上电/断电、寻车；座桶、诊断、刷新、退出、ECU/云控/OTA 在二级菜单。
         binding.btnMore.setOnClickListener {
             startActivity(Intent(this, MoreActivity::class.java))
         }
+    }
+
+    private fun pinShortcut(vehicle: Vehicle, channel: VehicleShortcuts.Channel, action: String) {
+        val result = VehicleShortcuts.pin(this, vehicle, channel, action)
+        Toast.makeText(this, VehicleShortcuts.pinMessage(result), Toast.LENGTH_LONG).show()
     }
 
     private fun observeLinkState() {

@@ -66,6 +66,7 @@
             android:excludeFromRecents="true"
             android:exported="true"
             android:noHistory="true"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/Theme.TLKey.Transparent" />
 
         <activity

@@ -80,7 +80,7 @@ class App : Application() {
             scanner = BleScanner(this),
         )
 
-        loginManager = LoginManager(authRepository, vehicleRepository)
+        loginManager = LoginManager(authRepository, vehicleRepository, secureStorage)
         controller = VehicleController(
             context = this,
             authRepository = authRepository,

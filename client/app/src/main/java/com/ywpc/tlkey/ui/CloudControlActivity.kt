@@ -3,6 +3,7 @@ package com.ywpc.tlkey.ui
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -21,6 +22,7 @@ import com.ywpc.tlkey.cloud.MqttStatus
 import com.ywpc.tlkey.cloud.MqttUnavailableReason
 import com.ywpc.tlkey.databinding.ActivityCloudBinding
 import com.ywpc.tlkey.vehicle.Vehicle
+import com.ywpc.tlkey.shortcut.VehicleShortcuts
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -66,6 +68,24 @@ class CloudControlActivity : AppCompatActivity() {
         binding.btnCloudSeat.setOnClickListener { send(CloudCommand.SEAT) }
         binding.btnCloudMute.setOnClickListener { send(CloudCommand.MUTE) }
         binding.btnCloudUnmute.setOnClickListener { send(CloudCommand.UNMUTE) }
+        listOf(
+            binding.btnCloudUnlock to CloudCommand.UNLOCK,
+            binding.btnCloudLock to CloudCommand.LOCK,
+            binding.btnCloudPowerOn to CloudCommand.POWER_ON,
+            binding.btnCloudPowerOff to CloudCommand.POWER_OFF,
+            binding.btnCloudFind to CloudCommand.FIND,
+            binding.btnCloudSeat to CloudCommand.SEAT,
+            binding.btnCloudMute to CloudCommand.MUTE,
+            binding.btnCloudUnmute to CloudCommand.UNMUTE,
+        ).forEach { (button, command) ->
+            button.setOnLongClickListener {
+                app.controller.cachedVehicle()?.let { vehicle ->
+                    val result = VehicleShortcuts.pin(this, vehicle, VehicleShortcuts.Channel.CLOUD, command.name)
+                    Toast.makeText(this, VehicleShortcuts.pinMessage(result), Toast.LENGTH_LONG).show()
+                }
+                true
+            }
+        }
 
         observeClient()
         binding.tvCloudAcc.text = getString(R.string.cloud_acc_unknown)
@@ -166,7 +186,11 @@ class CloudControlActivity : AppCompatActivity() {
     }
 
     private fun send(command: CloudCommand) {
-        if (busy || !connected) return
+        if (busy) return
+        if (!connected) {
+            showResult(getString(R.string.cloud_disconnected), isError = true)
+            return
+        }
         busy = true
         updateButtons()
         showResult(getString(R.string.cloud_send_running, command.label), isError = false)
@@ -255,7 +279,8 @@ class CloudControlActivity : AppCompatActivity() {
     }
 
     private fun updateButtons() {
-        val enabled = connected && !busy
+        // 未连接时也保持按钮可长按，否则无法为离线车辆添加快捷方式；单击会提示未连接。
+        val enabled = !busy
         listOf(
             binding.btnCloudUnlock,
             binding.btnCloudLock,
